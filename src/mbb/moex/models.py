@@ -27,6 +27,12 @@ class SecurityItem(BaseModel):
         return str_to_date(date_str)
 
 
+class SecurityMarketDataItem(BaseModel):
+    secid: str
+    last: Optional[float]
+    yield_: Optional[float]
+
+
 def str_to_date(x: str):
     if x == "0000-00-00":
         return None
