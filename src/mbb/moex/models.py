@@ -33,6 +33,18 @@ class SecurityMarketDataItem(BaseModel):
     yield_: Optional[float]
 
 
+class SecuritySearchItem(BaseModel):
+    secid: str
+    isin: str
+    gosreg: Optional[str]
+    emitent_inn: str
+    emitent_title: str
+    type: str
+    name: str
+    shortname: str
+    marketprice_boardid: Optional[str]
+
+
 def str_to_date(x: str):
     if x == "0000-00-00":
         return None
