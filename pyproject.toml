@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "mbb"
+version = "0.1.0"
+description = ""
+authors = ["roastedfrost <roastedfrost@gmail.com>"]
+readme = "README.md"
+packages = [{include = "mbb", from = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.111.0"
+
+[tool.poetry.scripts]
+start = "src.mbb.main:start"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
