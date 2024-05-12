@@ -1,5 +1,6 @@
 from typing_extensions import List
 import httpx
+from pydantic import ValidationError
 from mbb.moex.models import SecurityItem, SecurityMarketDataItem, SecuritySearchItem
 
 
@@ -23,26 +24,33 @@ def fetch_marketdata():
           "iss.meta=off&iss.only=marketdata&"\
           f"marketdata.columns={columns_query_value}"
 
-    def filter_item(item: SecurityMarketDataItem):
-        return item.last is not None
+    def row_to_item(row):
+        try:
+            return SecurityMarketDataItem(**dict(zip(columns, row)))
+        except ValidationError:
+            return None
 
     with httpx.Client(verify=False) as client:
         response = client.get(url)
         data = response.json()
-        return (
-            item for row in data["marketdata"]["data"]
-            if filter_item(item := SecurityMarketDataItem(**dict(zip(columns, row))))
-        )
+        return (item for x in data["marketdata"]["data"] if (item := row_to_item(x)))
 
 
 def search_all(query: str = None):
+    columns = list(SecuritySearchItem.model_fields.keys())
+
+    def row_to_item(row):
+        try:
+            return SecuritySearchItem(**dict(zip(columns, row)))
+        except ValidationError:
+            return None
+
     result = []
     limit = 100
     start = 0
     while True:
-        part = search(query=query, start=start, limit=limit)
-        print(part)
-        result.extend(part)
+        part = search(query=query, start=start, limit=limit, columns=columns)
+        result.extend(item for x in part if (item := row_to_item(x)))
         if len(part) < limit:
             break
         start = start + limit
@@ -50,13 +58,11 @@ def search_all(query: str = None):
 
 
 def search(**kwargs):
-    columns = list(SecuritySearchItem.model_fields.keys())
     with httpx.Client(verify=False) as client:
-        url = make_search_url(**kwargs, columns = columns)
-        print(url)
+        url = make_search_url(**kwargs)
         response = client.get(url)
         data = response.json()
-        return list(SecuritySearchItem(**dict(zip(columns, row))) for row in data["securities"]["data"])
+        return data["securities"]["data"]
 
 
 def make_search_url(query: str = None, start=0, limit=100, columns: List = None):

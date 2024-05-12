@@ -1,5 +1,6 @@
 from typing_extensions import Optional
 from datetime import datetime
+from enum import StrEnum
 from pydantic import BaseModel, field_validator
 
 
@@ -29,20 +30,26 @@ class SecurityItem(BaseModel):
 
 class SecurityMarketDataItem(BaseModel):
     secid: str
-    last: Optional[float]
+    last: float
     yield_: Optional[float]
+
+
+class Board(StrEnum):
+    tqob = "TQOB"
+    tqcb = "TQCB"
+    tcir = "TQIR"
 
 
 class SecuritySearchItem(BaseModel):
     secid: str
     isin: str
-    gosreg: Optional[str]
+    gosreg: str
     emitent_inn: str
     emitent_title: str
     type: str
     name: str
     shortname: str
-    marketprice_boardid: Optional[str]
+    marketprice_boardid: Board
 
 
 def str_to_date(x: str):
