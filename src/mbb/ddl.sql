@@ -1,0 +1,9 @@
+BEGIN;
+CREATE TABLE IF NOT EXISTS Bookmark (
+  isin TEXT PRIMARY KEY
+);
+CREATE TABLE IF NOT EXISTS Emitent (
+  emitent_inn TEXT PRIMARY KEY,
+  sector TEXT
+);
+COMMIT;
