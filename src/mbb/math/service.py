@@ -1,4 +1,5 @@
 from typing_extensions import List
+from enum import Enum
 from scipy.optimize import anderson, newton
 from mbb.math.models import PaymentItem
 
@@ -27,7 +28,7 @@ def xirr(payments: List[PaymentItem], method: CalcMethod = CalcMethod.ANDERSON):
         return newton(lambda r: xnpv(r, payments), 0)
     if method == CalcMethod.ANDERSON:
         return anderson(lambda r: xnpv(r, payments), 0)
-    raise BaseException()
+    raise Exception()
 
 
 def compute_xirr(expenses: List[PaymentItem], income: List[PaymentItem], method: CalcMethod = CalcMethod.ANDERSON):
