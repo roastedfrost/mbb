@@ -1,6 +1,5 @@
 ### Usage
-```console
-cd <project_directory>
+```bash
 poetry run start
 ```
 
