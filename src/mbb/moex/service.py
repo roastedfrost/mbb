@@ -1,23 +1,29 @@
-from typing_extensions import List
+from typing_extensions import List, Union, Sequence
 import httpx
 from pydantic import ValidationError
 from mbb.moex.models import SecurityItem, SecurityMarketDataItem, SecuritySearchItem
 
 
-def fetch_securities():
+def fetch_securities() -> Sequence[Union[SecurityItem, None]]:
     columns = SecurityItem.model_fields.keys()
     columns_query_value = ",".join(x.upper() for x in columns)
     url = "https://iss.moex.com/iss/engines/stock/markets/bonds/securities.json?" \
           "iss.meta=off&iss.only=securities&"\
           f"securities.columns={columns_query_value}"
 
+    def row_to_item(row):
+        try:
+            return SecurityItem(**dict(zip(columns, row)))
+        except ValidationError:
+            return None
+
     with httpx.Client(verify=False) as client:
         response = client.get(url)
         data = response.json()
-        return (SecurityItem(**dict(zip(columns, row))) for row in data["securities"]["data"])
+        return (item for x in data["securities"]["data"] if (item := row_to_item(x)))
 
 
-def fetch_marketdata():
+def fetch_marketdata() -> Sequence[Union[SecurityMarketDataItem, None]]:
     columns = SecurityMarketDataItem.model_fields.keys()
     columns_query_value = ",".join(x.strip('_').upper() for x in columns)
     url = "https://iss.moex.com/iss/engines/stock/markets/bonds/securities.json?" \
@@ -36,7 +42,7 @@ def fetch_marketdata():
         return (item for x in data["marketdata"]["data"] if (item := row_to_item(x)))
 
 
-def search_all(query: str = None):
+def search_all(query: str = None) -> List[Union[SecuritySearchItem, None]]:
     columns = list(SecuritySearchItem.model_fields.keys())
 
     def row_to_item(row):

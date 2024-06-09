@@ -43,5 +43,5 @@ def populate_db(connection: sqlite3.Connection):
     sql = "INSERT OR IGNORE INTO Security VALUES " \
           "(:secid, :isin, :gosreg, :emitent_inn, :emitent_title, :type, :name, :shortname, :marketprice_boardid)"
     with closing(connection.cursor()) as cursor:
-        cursor.executemany(sql, [x.dict() for x in securities])
+        cursor.executemany(sql, [x.model_dump() for x in securities if x is not None])
         connection.commit()
