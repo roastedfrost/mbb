@@ -3,6 +3,7 @@ import os
 from contextlib import asynccontextmanager, closing
 import sqlite3
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from mbb.app.router import router as app_router
 from mbb.moex.router import router as moex_router
 from mbb.moex.service import search_all
@@ -21,6 +22,13 @@ async def lifespan(app: FastAPI):
 
 application = FastAPI(lifespan=lifespan)
 
+application.add_middleware(
+  CORSMiddleware,
+  allow_origins=["*"],
+  allow_credentials=True,
+  allow_methods=["*"],
+  allow_headers=["*"],
+)
 
 application.include_router(app_router, prefix="/app")
 application.include_router(moex_router, prefix="/moex")
