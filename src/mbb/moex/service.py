@@ -1,11 +1,12 @@
-from typing_extensions import List, Union, Sequence
+import sqlite3
+from typing_extensions import List, Sequence
 from contextlib import closing
 import httpx
 from pydantic import ValidationError
 from mbb.moex.models import SecurityItem, SecurityMarketDataItem, SecuritySearchItem
 
 
-def fetch_securities(connection) -> Sequence[Union[SecurityItem, None]]:
+def fetch_securities(connection: sqlite3.Connection) -> Sequence[SecurityItem]:
     columns = SecurityItem.model_fields.keys()
     columns_query_value = ",".join(x.upper() for x in columns)
     url = "https://iss.moex.com/iss/engines/stock/markets/bonds/securities.json?" \
@@ -33,7 +34,7 @@ def fetch_securities(connection) -> Sequence[Union[SecurityItem, None]]:
         return result
 
 
-def fetch_marketdata() -> Sequence[Union[SecurityMarketDataItem, None]]:
+def fetch_marketdata() -> Sequence[SecurityMarketDataItem]:
     columns = SecurityMarketDataItem.model_fields.keys()
     columns_query_value = ",".join(x.strip('_').upper() for x in columns)
     url = "https://iss.moex.com/iss/engines/stock/markets/bonds/securities.json?" \
@@ -52,7 +53,7 @@ def fetch_marketdata() -> Sequence[Union[SecurityMarketDataItem, None]]:
         return (item for x in data["marketdata"]["data"] if (item := row_to_item(x)))
 
 
-def search_all(query: str = None) -> List[Union[SecuritySearchItem, None]]:
+def search_all(connection: sqlite3.Connection, query: str = None) -> List[SecuritySearchItem]:
     columns = list(SecuritySearchItem.model_fields.keys())
 
     def row_to_item(row):
@@ -70,6 +71,13 @@ def search_all(query: str = None) -> List[Union[SecuritySearchItem, None]]:
         if len(part) < limit:
             break
         start = start + limit
+
+    sql = "INSERT OR IGNORE INTO Security VALUES " \
+          "(:isin, :secid, :gosreg, :emitent_inn, :emitent_title, :type, :name, :shortname, :marketprice_boardid)"
+    with closing(connection.cursor()) as cursor:
+        cursor.execute("DELETE FROM Security")
+        cursor.executemany(sql, [x.model_dump() for x in result])
+        connection.commit()
     return result
 
 

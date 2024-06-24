@@ -6,7 +6,6 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from mbb.app.router import router as app_router
 from mbb.moex.router import router as moex_router
-from mbb.moex.service import search_all
 from mbb.settings import settings
 
 
@@ -14,8 +13,6 @@ from mbb.settings import settings
 async def lifespan(app: FastAPI):
     with closing(sqlite3.connect(settings.db_name, check_same_thread=False)) as connection:
         create_db(connection)
-        # populate_db(connection)
-        pass
     yield
     pass
 
@@ -45,11 +42,3 @@ def create_db(connection: sqlite3.Connection):
     with closing(connection.cursor()) as cursor:
         cursor.executescript(sql)
 
-
-def populate_db(connection: sqlite3.Connection):
-    securities = search_all()
-    sql = "INSERT OR IGNORE INTO Security VALUES " \
-          "(:secid, :isin, :gosreg, :emitent_inn, :emitent_title, :type, :name, :shortname, :marketprice_boardid)"
-    with closing(connection.cursor()) as cursor:
-        cursor.executemany(sql, [x.model_dump() for x in securities if x is not None])
-        connection.commit()
