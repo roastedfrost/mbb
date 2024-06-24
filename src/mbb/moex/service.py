@@ -1,10 +1,11 @@
 from typing_extensions import List, Union, Sequence
+from contextlib import closing
 import httpx
 from pydantic import ValidationError
 from mbb.moex.models import SecurityItem, SecurityMarketDataItem, SecuritySearchItem
 
 
-def fetch_securities() -> Sequence[Union[SecurityItem, None]]:
+def fetch_securities(connection) -> Sequence[Union[SecurityItem, None]]:
     columns = SecurityItem.model_fields.keys()
     columns_query_value = ",".join(x.upper() for x in columns)
     url = "https://iss.moex.com/iss/engines/stock/markets/bonds/securities.json?" \
@@ -20,7 +21,16 @@ def fetch_securities() -> Sequence[Union[SecurityItem, None]]:
     with httpx.Client(verify=False) as client:
         response = client.get(url)
         data = response.json()
-        return (item for x in data["securities"]["data"] if (item := row_to_item(x)))
+        result = list(item for x in data["securities"]["data"] if (item := row_to_item(x)))
+        sql = "INSERT OR IGNORE INTO SecurityData VALUES " \
+              "(:isin, :secid, :issuesize, :issuesizeplaced, DATE(:settledate), :couponpercent, "\
+              ":couponvalue, DATE(:nextcoupon), :couponperiod, :accruedint, :facevalue, :facevalueonsettledate, "\
+              "DATE(:matdate), DATE(:offerdate), :buybackprice, DATE(:buybackdate))"
+        with closing(connection.cursor()) as cursor:
+            cursor.execute("DELETE FROM SecurityData")
+            cursor.executemany(sql, [x.model_dump() for x in result])
+            connection.commit()
+        return result
 
 
 def fetch_marketdata() -> Sequence[Union[SecurityMarketDataItem, None]]:

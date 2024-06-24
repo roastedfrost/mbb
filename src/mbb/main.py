@@ -13,7 +13,7 @@ from mbb.settings import settings
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     with closing(sqlite3.connect(settings.db_name, check_same_thread=False)) as connection:
-        # create_db(connection)
+        create_db(connection)
         # populate_db(connection)
         pass
     yield

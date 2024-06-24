@@ -1,6 +1,6 @@
 from contextlib import closing
 import sqlite3
-from mbb.moex.models import SecuritySearchItem
+from mbb.moex.models import SecuritySearchItem, SecurityItem
 from mbb.app.models import BookmarkItem
 
 
@@ -15,6 +15,19 @@ def search_all(connection: sqlite3.Connection):
 def security_factory(cursor, row):
     fields = [column[0] for column in cursor.description]
     return SecuritySearchItem(**{k: v for k, v in zip(fields, row)})
+
+
+def fetch_securities(connection: sqlite3.Connection):
+    with closing(connection.cursor()) as cursor:
+        sql = "SELECT * FROM SecurityData"
+        cursor.execute(sql)
+        cursor.row_factory = security_item_factory
+        return cursor.fetchall()
+
+
+def security_item_factory(cursor, row):
+    fields = [column[0] for column in cursor.description]
+    return SecurityItem(**{k: v for k, v in zip(fields, row)})
 
 
 def get_bookmarks(connection: sqlite3.Connection):
